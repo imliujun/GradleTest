@@ -1,0 +1,168 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 25
+    buildToolsVersion "25.0.3"
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 25
+        versionCode gitVersionCode()
+    }
+
+    //    配置你自己的签名文件信息，然后放开注释
+    //    signingConfigs {
+    //        app1 {
+    //            storeFile file("app1.jks")
+    //            storePassword "111111"
+    //            keyAlias "app1"
+    //            keyPassword "111111"
+    //        }
+    //
+    //        app2 {
+    //            storeFile file("app2.jks")
+    //            storePassword "111111"
+    //            keyAlias "app2"
+    //            keyPassword "111111"
+    //        }
+    //    }
+
+    buildTypes {
+        release {
+            // 不显示Log
+            buildConfigField "boolean", "LOG_DEBUG", "false"
+        }
+
+        debug {
+            // 显示Log
+            buildConfigField "boolean", "LOG_DEBUG", "true"
+            versionNameSuffix "-debug"
+            //    配置你自己的签名文件信息，然后放开注释
+            //            signingConfig null
+            manifestPlaceholders.UMENG_CHANNEL_VALUE = "test"
+        }
+    }
+
+    //创建两个维度的 flavor
+    flavorDimensions "APP", "SERVER"
+
+    productFlavors {
+
+        app1 {
+            dimension "APP"
+            applicationId 'com.imliujun.app1'
+
+            versionName rootProject.ext.APP1_VERSION_NAME
+
+            //应用名
+            resValue "string", "app_name", "APP1"
+
+            buildConfigField("String", "versionNumber", "\"${rootProject.ext.APP1_VERSION_NAME}\"")
+
+            //第三方SDK的一些配置
+            buildConfigField "int", "IM_APPID", "11111111" //app1的腾讯IM APPID
+            buildConfigField "String", "IM_ACCOUNTTYPE", "\"app1的腾讯IM accountype\""
+            manifestPlaceholders = [UMENG_APP_KEY      : "app1的友盟 APP KEY",
+                                    UMENG_CHANNEL_VALUE: "app1默认的渠道名",
+                                    XG_ACCESS_ID       : "app1信鸽推送ACCESS_ID",
+                                    XG_ACCESS_KEY      : "app1信鸽推送ACCESS_KEY",
+                                    QQ_APP_ID          : "app1的QQ_APP_ID",
+                                    AMAP_KEY           : "app1的高德地图key",
+                                    APPLICATIONID      : applicationId]
+            //签名文件     配置你自己的签名文件信息，然后放开注释
+            //            signingConfig signingConfigs.app1
+        }
+
+        app2 {
+            dimension "APP"
+            applicationId 'com.imliujun.app2'
+
+            versionName rootProject.ext.APP2_VERSION_NAME
+
+            //应用名
+            resValue "string", "app_name", "APP2"
+
+            buildConfigField "String", "versionNumber", "\"${rootProject.ext.APP2_VERSION_NAME}\""
+
+            //第三方SDK的一些配置
+            buildConfigField "int", "IM_APPID", "11111111" //app2的腾讯IM APPID
+            buildConfigField "String", "IM_ACCOUNTTYPE", "\"app2的腾讯IM accountype\""
+            manifestPlaceholders = [UMENG_APP_KEY      : "app2的友盟 APP KEY",
+                                    UMENG_CHANNEL_VALUE: "app2默认的渠道名",
+                                    XG_ACCESS_ID       : "app2信鸽推送ACCESS_ID",
+                                    XG_ACCESS_KEY      : "app2信鸽推送ACCESS_KEY",
+                                    QQ_APP_ID          : "app2的QQ_APP_ID",
+                                    AMAP_KEY           : "app2的高德地图key",
+                                    APPLICATIONID      : applicationId]
+            //签名文件     配置你自己的签名文件信息，然后放开注释
+            //            signingConfig signingConfigs.app2
+        }
+
+        offline {
+            dimension "SERVER"
+        }
+
+        online {
+            dimension "SERVER"
+        }
+
+        admin {
+            dimension "SERVER"
+
+            manifestPlaceholders.UMENG_CHANNEL_VALUE = "admin"
+        }
+    }
+}
+
+android.applicationVariants.all { variant ->
+    switch (variant.flavorName) {
+        case "app1Admin":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://admin.app1domain.com/\""
+            if ("debug" == variant.buildType.getName()) {
+                variant.mergedFlavor.setVersionName(getTestVersionName() + "-管理员")
+            } else {
+                variant.mergedFlavor.setVersionName(rootProject.ext.APP1_VERSION_NAME + "-管理员")
+            }
+            break
+        case "app1Offline":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://offline.app1domain.com/\""
+            variant.mergedFlavor.setVersionName(getTestVersionName())
+            break
+        case "app1Online":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://online.app1domain.com/\""
+            if ("debug" == variant.buildType.getName()) {
+                variant.mergedFlavor.setVersionName(getTestVersionName())
+            }
+            break
+        case "app2Admin":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://admin.app2domain.com/\""
+            if ("debug" == variant.buildType.getName()) {
+                variant.mergedFlavor.setVersionName(getApp2TestVersionName() + "-管理员")
+            } else {
+                variant.mergedFlavor.setVersionName(rootProject.ext.APP2_VERSION_NAME + "-管理员")
+            }
+            break
+        case "app2Offline":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://offline.app2domain.com/\""
+            variant.mergedFlavor.setVersionName(getApp2TestVersionName())
+            break
+        case "app2Online":
+            variant.buildConfigField "String", "DOMAIN_NAME",
+                    "\"https://online.app2domain.com/\""
+            if ("debug" == variant.buildType.getName()) {
+                variant.mergedFlavor.setVersionName(getApp2TestVersionName())
+            }
+            break
+    }
+}
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+}

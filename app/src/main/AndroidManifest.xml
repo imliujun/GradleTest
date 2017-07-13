@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.imliujun.gradle">
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+        <!-- 微信分享回调 -->
+        <activity
+            android:name="${APPLICATIONID}.wxapi.WXEntryActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+        <!-- 微信支付的回调 -->
+        <activity
+            android:name="${APPLICATIONID}.wxapi.WXPayEntryActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+
+        <meta-data
+            android:name="XG_V2_ACCESS_ID"
+            android:value="${XG_ACCESS_ID}"/>
+        <meta-data
+            android:name="XG_V2_ACCESS_KEY"
+            android:value="${XG_ACCESS_KEY}"/>
+        <meta-data
+            android:name="com.amap.api.v2.apikey"
+            android:value="${AMAP_KEY}"/>
+        <meta-data
+            android:name="UMENG_APPKEY"
+            android:value="${UMENG_APP_KEY}"/>
+        <meta-data
+            android:name="UMENG_CHANNEL"
+            android:value="${UMENG_CHANNEL_VALUE}"/>
+
+        <!-- 【必须】 【注意】authorities修改为 包名.AUTH_XGPUSH, 如demo的包名为：com.qq.xgdemo-->
+        <!--<provider-->
+        <!--android:name="com.tencent.android.tpush.XGPushProvider"-->
+        <!--android:authorities="${APPLICATIONID}.AUTH_XGPUSH"-->
+        <!--android:exported="true"/>-->
+        <!--&lt;!&ndash; 【必须】 【注意】authorities修改为 包名.TPUSH_PROVIDER, 如demo的包名为：com.qq.xgdemo&ndash;&gt;-->
+        <!--<provider-->
+        <!--android:name="com.tencent.android.tpush.SettingsContentProvider"-->
+        <!--android:authorities="${APPLICATIONID}.TPUSH_PROVIDER"-->
+        <!--android:exported="false"/>-->
+        <!--&lt;!&ndash; 【必须】 【注意】authorities修改为 包名.TENCENT.MID.V3, 如demo的包名为：com.qq.xgdemo&ndash;&gt;-->
+        <!--<provider-->
+        <!--android:name="com.tencent.mid.api.MidProvider"-->
+        <!--android:authorities="${APPLICATIONID}.TENCENT.MID.V3"-->
+        <!--android:exported="true"/>-->
+
+        <!--<activity-->
+        <!--android:name="com.mob.tools.MobUIShell"-->
+        <!--android:configChanges="keyboardHidden|orientation|screenSize"-->
+        <!--android:screenOrientation="portrait"-->
+        <!--android:theme="@android:style/Theme.Translucent.NoTitleBar"-->
+        <!--android:windowSoftInputMode="stateHidden|adjustResize">-->
+        <!--<intent-filter>-->
+        <!--<data android:scheme="${QQ_APP_ID}"/>-->
+        <!--<action android:name="android.intent.action.VIEW"/>-->
+
+        <!--<category android:name="android.intent.category.BROWSABLE"/>-->
+        <!--<category android:name="android.intent.category.DEFAULT"/>-->
+        <!--</intent-filter>-->
+
+        <!--&lt;!&ndash; 调用新浪原生SDK，需要注册的回调activity &ndash;&gt;-->
+        <!--<intent-filter>-->
+        <!--<action android:name="com.sina.weibo.sdk.action.ACTION_SDK_REQ_ACTIVITY"/>-->
+
+        <!--<category android:name="android.intent.category.DEFAULT"/>-->
+        <!--</intent-filter>-->
+        <!--</activity>-->
+
+    </application>
+
+</manifest>
