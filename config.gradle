@@ -1,0 +1,33 @@
+//项目配置项,后期有sdk插件的话也在此统一配置版本
+ext {
+    //签名文件配置
+    signing = [keyAlias     : 'xxxxx',
+               keyPassword  : 'xxxxx',
+               storeFile    : '../sign.keystore',
+               storePassword: 'xxxxxx']
+
+    //蒲公英配置
+    pgy = [apiKey   : "xxxx",
+           uploadUrl: "https://www.pgyer.com/apiv2/app/upload"]
+
+    //360加固配置
+    jiagu = [name             : 'xxxxx',
+             password         : 'xxxxx',
+             zipPath          : "../jiagu/360jiagu.zip",
+             unzipPath        : "../jiagu/360jiagubao/",
+             jarPath          : '../jiagu/360jiagubao/jiagu/jiagu.jar',
+             channelConfigPath: '../jiagu/Channel.txt',
+             jiagubao_mac     : "http://down.360safe.com/360Jiagu/360jiagubao_mac.zip",
+             jiagubao_windows : "http://down.360safe.com/360Jiagu/360jiagubao_windows_64.zip",
+    ]
+
+    android = [compileSdkVersion: 28,
+               minSdkVersion    : 19,
+               targetSdkVersion : 28]
+
+    //版本号管理
+    APP1_VERSION_NAME = "2.0.2"
+    APP1_TEST_NUM = "0001"
+    APP2_VERSION_NAME = "1.0.5"
+    APP2_TEST_NUM = "0005"
+}

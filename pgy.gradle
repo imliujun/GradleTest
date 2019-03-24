@@ -1,0 +1,124 @@
+def app1OfflineFile = "${projectDir.absolutePath}/build/outputs/apk/app1Offline/release/${getApkName(getTestVersionName("offline"))}"
+def app1OnlineFile = "${projectDir.absolutePath}/build/outputs/apk/app1Online/release/${getApkName(rootProject.ext.APP1_VERSION_NAME)}"
+def app2OfflineFile = "${projectDir.absolutePath}/build/outputs/apk/app2Offline/release/${getApkName(getApp2TestVersionName("offline"))}"
+def app2OnlineFile = "${projectDir.absolutePath}/build/outputs/apk/app2Online/release/${getApkName(rootProject.ext.APP2_VERSION_NAME)}"
+def app1AdminFileDir = "${projectDir.parent}/jiagu/apk/app1Admin/"
+def app2AdminFileDir = "${projectDir.parent}/jiagu/apk/app2Admin/"
+
+
+private def uploadPGY(String filePath) {
+    println "uploadPGY filePath：" + filePath
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        executable = 'curl'
+        args = ['-F', "file=@${filePath}", '-F', "_api_key=${rootProject.ext.pgy["apiKey"]}", rootProject.ext.pgy["uploadUrl"]]
+        standardOutput = stdout
+    }
+    String output = stdout.toString()
+    def parsedJson = new groovy.json.JsonSlurper().parseText(output)
+    println parsedJson.data.buildQRCodeURL
+    println "版本号：" + parsedJson.data.buildVersion
+}
+
+/**
+ * 执行 “uploadApp1Offline” 命令自动打包测试环境包，并上传到蒲公英
+ */
+task uploadApp1Offline(dependsOn: 'assembleApp1OfflineRelease') {
+    group = "publish"
+
+    doLast {
+        uploadPGY(app1OfflineFile)
+    }
+}
+
+/**
+ * 执行 “uploadApp1Online” 命令自动打包生成线上内测环境包，并上传到蒲公英
+ */
+task uploadApp1Online(dependsOn: 'assembleApp1OnlineRelease') {
+    group = "publish"
+
+    doLast {
+        uploadPGY(app1OnlineFile)
+    }
+}
+
+/**
+ * 执行 “uploadApp1Admin” 命令自动打超管服包，并上传到蒲公英
+ */
+task uploadApp1Admin(dependsOn: 'jiaGuApp1Admin') {
+    group = "publish"
+
+    doLast {
+        File dir = new File(app1AdminFileDir)
+        if (!dir.exists()) {
+            println "Alpha dir not exists：" + dir.path
+            return
+        }
+        File[] files = dir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.isFile() && file.name.endsWith(".apk")
+            }
+        })
+        if (files == null || files.size() == 0) {
+            println "files == null ||  files.size() == 0"
+            return
+        }
+        File apkFile = files[0]
+
+        uploadPGY(apkFile.path)
+    }
+}
+
+/**
+ * 执行 “uploadApp2Offline” 命令自动打包测试环境包，并上传到蒲公英
+ */
+task uploadApp2Offline(dependsOn: 'assembleApp2OfflineRelease') {
+    group = "publish"
+
+    doLast {
+        uploadPGY(app2OfflineFile)
+    }
+}
+
+/**
+ * 执行 “uploadApp2Online” 命令自动打包生成线上内测环境包，并上传到蒲公英
+ */
+task uploadApp2Online(dependsOn: 'assembleApp2OnlineRelease') {
+    group = "publish"
+
+    doLast {
+        uploadPGY(app2OnlineFile)
+    }
+}
+
+/**
+ * 执行 “uploadApp2Admin” 命令自动打超管服包，并上传到蒲公英
+ */
+task uploadApp2Admin(dependsOn: 'jiaGuApp2Admin') {
+    group = "publish"
+
+    doLast {
+        File dir = new File(app2AdminFileDir)
+        if (!dir.exists()) {
+            println "Alpha dir not exists：" + dir.path
+            return
+        }
+        File[] files = dir.listFiles(new FileFilter() {
+            @Override
+            boolean accept(File file) {
+                return file.isFile() && file.name.endsWith(".apk")
+            }
+        })
+        if (files == null || files.size() == 0) {
+            println "files == null ||  files.size() == 0"
+            return
+        }
+        File apkFile = files[0]
+
+        uploadPGY(apkFile.path)
+    }
+}
+
+
+

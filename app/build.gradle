@@ -1,11 +1,14 @@
 apply plugin: 'com.android.application'
 
+apply from: '../jiagu.gradle'
+apply from: '../pgy.gradle'
+
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.3"
+    compileSdkVersion rootProject.ext.android["compileSdkVersion"]
+
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 25
+        minSdkVersion rootProject.ext.android["minSdkVersion"]
+        targetSdkVersion rootProject.ext.android["targetSdkVersion"]
         versionCode gitVersionCode()
     }
 
@@ -119,50 +122,77 @@ android.applicationVariants.all { variant ->
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://admin.app1domain.com/\""
             if ("debug" == variant.buildType.getName()) {
-                variant.mergedFlavor.setVersionName(getTestVersionName() + "-管理员")
+                variant.outputs.each { output ->
+                    output.versionNameOverride = getTestVersionName("管理员")
+                }
+                //                variant.mergedFlavor.setVersionName(getTestVersionName() + "-管理员")
             } else {
-                variant.mergedFlavor.setVersionName(rootProject.ext.APP1_VERSION_NAME + "-管理员")
+                variant.outputs.each { output ->
+                    output.versionNameOverride = rootProject.ext.APP1_VERSION_NAME + "-管理员"
+                }
+                //                variant.mergedFlavor.setVersionName(rootProject.ext.APP1_VERSION_NAME + "-管理员")
             }
             break
         case "app1Offline":
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://offline.app1domain.com/\""
-            variant.mergedFlavor.setVersionName(getTestVersionName())
+            variant.outputs.each { output ->
+                output.versionNameOverride = getTestVersionName("offline")
+            }
+            //            variant.mergedFlavor.setVersionName(getTestVersionName())
             break
         case "app1Online":
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://online.app1domain.com/\""
             if ("debug" == variant.buildType.getName()) {
-                variant.mergedFlavor.setVersionName(getTestVersionName())
+                variant.outputs.each { output ->
+                    output.versionNameOverride = getTestVersionName("online")
+                }
+                //                variant.mergedFlavor.setVersionName(getTestVersionName())
             }
             break
         case "app2Admin":
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://admin.app2domain.com/\""
             if ("debug" == variant.buildType.getName()) {
-                variant.mergedFlavor.setVersionName(getApp2TestVersionName() + "-管理员")
+                variant.outputs.each { output ->
+                    output.versionNameOverride = getApp2TestVersionName("管理员")
+                }
+                //                variant.mergedFlavor.setVersionName(getApp2TestVersionName() + "-管理员")
             } else {
-                variant.mergedFlavor.setVersionName(rootProject.ext.APP2_VERSION_NAME + "-管理员")
+                variant.outputs.each { output ->
+                    output.versionNameOverride = rootProject.ext.APP2_VERSION_NAME + "-管理员"
+                }
+                //                variant.mergedFlavor.setVersionName(rootProject.ext.APP2_VERSION_NAME + "-管理员")
             }
             break
         case "app2Offline":
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://offline.app2domain.com/\""
-            variant.mergedFlavor.setVersionName(getApp2TestVersionName())
+            variant.outputs.each { output ->
+                output.versionNameOverride = getApp2TestVersionName("offline")
+            }
+            //            variant.mergedFlavor.setVersionName(getApp2TestVersionName())
             break
         case "app2Online":
             variant.buildConfigField "String", "DOMAIN_NAME",
                     "\"https://online.app2domain.com/\""
             if ("debug" == variant.buildType.getName()) {
-                variant.mergedFlavor.setVersionName(getApp2TestVersionName())
+                variant.outputs.each { output ->
+                    output.versionNameOverride = getApp2TestVersionName("online")
+                }
+                //                variant.mergedFlavor.setVersionName(getApp2TestVersionName())
             }
             break
+    }
+    variant.outputs.all {
+        outputFileName = getApkName(variant.versionName)
     }
 }
 
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.appcompat:appcompat:1.1.0-alpha03'
+    implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 }

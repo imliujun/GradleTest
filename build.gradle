@@ -1,11 +1,13 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+apply from: 'config.gradle'
 
 buildscript {
     repositories {
         jcenter()
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.3'
+        classpath 'com.android.tools.build:gradle:3.3.2'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -15,6 +17,7 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        google()
     }
 }
 
@@ -22,24 +25,28 @@ task clean(type: Delete) {
     delete rootProject.buildDir
 }
 
-ext {
-    APP1_VERSION_NAME = "2.0.2"
-    APP1_TEST_NUM = "0001"
-    APP2_VERSION_NAME = "1.0.5"
-    APP2_TEST_NUM = "0005"
+
+def getTestVersionName(String suffix) {
+    if (suffix == null || suffix.isEmpty()) {
+        return String.format("%s.%s", rootProject.ext.APP1_VERSION_NAME, rootProject.ext.APP1_TEST_NUM)
+    } else {
+        return String.format("%s.%s.%s", rootProject.ext.APP1_VERSION_NAME, rootProject.ext.APP1_TEST_NUM, suffix)
+    }
 }
 
-def getTestVersionName() {
-    return String.format("%s.%s", rootProject.ext.APP1_VERSION_NAME,
-            rootProject.ext.APP1_TEST_NUM)
-}
-
-def getApp2TestVersionName() {
-    return String.format("%s.%s", rootProject.ext.APP2_VERSION_NAME,
-            rootProject.ext.APP2_TEST_NUM)
+def getApp2TestVersionName(String suffix) {
+    if (suffix == null || suffix.isEmpty()) {
+        return String.format("%s.%s", rootProject.ext.APP2_VERSION_NAME, rootProject.ext.APP2_TEST_NUM)
+    } else {
+        return String.format("%s.%s.%s", rootProject.ext.APP2_VERSION_NAME, rootProject.ext.APP2_TEST_NUM, suffix)
+    }
 }
 
 static int gitVersionCode() {
     def count = "git rev-list HEAD --count".execute().text.trim()
     return count.isInteger() ? count.toInteger() : 0
+}
+
+def getApkName(String versionName) {
+    return String.format("我是一个包-v%s.apk", versionName)
 }
