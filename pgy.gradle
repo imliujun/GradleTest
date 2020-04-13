@@ -1,46 +1,47 @@
-def app1OfflineFile = "${projectDir.absolutePath}/build/outputs/apk/app1Offline/release/${getApkName(getTestVersionName("offline"))}"
-def app1OnlineFile = "${projectDir.absolutePath}/build/outputs/apk/app1Online/release/${getApkName(rootProject.ext.APP1_VERSION_NAME)}"
-def app2OfflineFile = "${projectDir.absolutePath}/build/outputs/apk/app2Offline/release/${getApkName(getApp2TestVersionName("offline"))}"
-def app2OnlineFile = "${projectDir.absolutePath}/build/outputs/apk/app2Online/release/${getApkName(rootProject.ext.APP2_VERSION_NAME)}"
-def app1AdminFileDir = "${projectDir.parent}/jiagu/apk/app1Admin/"
-def app2AdminFileDir = "${projectDir.parent}/jiagu/apk/app2Admin/"
+import groovy.json.JsonSlurper
 
-
-private def uploadPGY(String filePath) {
+/**
+ *
+ * @param filePath
+ * @param buildChannelShortcut 蒲公英上创建的渠道名，用于分发不同类型的 apk 包
+ * @return
+ */
+private def uploadPGY(String filePath, String buildChannelShortcut) {
     println "uploadPGY filePath：" + filePath
+
     def stdout = new ByteArrayOutputStream()
     exec {
         executable = 'curl'
-        args = ['-F', "file=@${filePath}", '-F', "_api_key=${rootProject.ext.pgy["apiKey"]}", rootProject.ext.pgy["uploadUrl"]]
+        args = ['-F', "file=@${filePath}", '-F', "_api_key=${rootProject.ext.pgy["apiKey"]}", '-F', 'buildInstallType=2', '-F', 'buildPassword=Password', '-F', "buildChannelShortcut=${buildChannelShortcut}", rootProject.ext.pgy["uploadUrl"]]
         standardOutput = stdout
     }
     String output = stdout.toString()
-    def parsedJson = new groovy.json.JsonSlurper().parseText(output)
+    println output
+    def parsedJson = new JsonSlurper().parseText(output)
     println parsedJson.data.buildQRCodeURL
-    println "版本号：" + parsedJson.data.buildVersion
+    println "buildVersion: " + parsedJson.data.buildVersion
+    println "buildVersionNo: " + parsedJson.data.buildVersionNo
 }
 
-/**
- * 执行 “uploadApp1Offline” 命令自动打包测试环境包，并上传到蒲公英
- */
-task uploadApp1Offline(dependsOn: 'assembleApp1OfflineRelease') {
-    group = "publish"
-
-    doLast {
-        uploadPGY(app1OfflineFile)
+private def getApkFile(String fileDir) {
+    def dir = new File(file(fileDir), "channels")
+    if (!dir.exists()) {
+        println "dir not exists：" + dir.path
+        return null
     }
-}
-
-/**
- * 执行 “uploadApp1Online” 命令自动打包生成线上内测环境包，并上传到蒲公英
- */
-task uploadApp1Online(dependsOn: 'assembleApp1OnlineRelease') {
-    group = "publish"
-
-    doLast {
-        uploadPGY(app1OnlineFile)
+    File[] files = dir.listFiles(new FileFilter() {
+        @Override
+        boolean accept(File file) {
+            return file.isFile() && file.name.endsWith(".apk")
+        }
+    })
+    if (files == null || files.size() == 0) {
+        println "files == null ||  files.size() == 0"
+        return null
     }
+    return files[0]
 }
+
 
 /**
  * 执行 “uploadApp1Admin” 命令自动打超管服包，并上传到蒲公英
@@ -49,46 +50,10 @@ task uploadApp1Admin(dependsOn: 'jiaGuApp1Admin') {
     group = "publish"
 
     doLast {
-        File dir = new File(app1AdminFileDir)
-        if (!dir.exists()) {
-            println "Alpha dir not exists：" + dir.path
-            return
+        def apkFile = getApkFile(rootProject.ext.jiagu["app1AdminOutputPath"])
+        if (apkFile != null) {
+            uploadPGY(apkFile.absolutePath, "")
         }
-        File[] files = dir.listFiles(new FileFilter() {
-            @Override
-            boolean accept(File file) {
-                return file.isFile() && file.name.endsWith(".apk")
-            }
-        })
-        if (files == null || files.size() == 0) {
-            println "files == null ||  files.size() == 0"
-            return
-        }
-        File apkFile = files[0]
-
-        uploadPGY(apkFile.path)
-    }
-}
-
-/**
- * 执行 “uploadApp2Offline” 命令自动打包测试环境包，并上传到蒲公英
- */
-task uploadApp2Offline(dependsOn: 'assembleApp2OfflineRelease') {
-    group = "publish"
-
-    doLast {
-        uploadPGY(app2OfflineFile)
-    }
-}
-
-/**
- * 执行 “uploadApp2Online” 命令自动打包生成线上内测环境包，并上传到蒲公英
- */
-task uploadApp2Online(dependsOn: 'assembleApp2OnlineRelease') {
-    group = "publish"
-
-    doLast {
-        uploadPGY(app2OnlineFile)
     }
 }
 
@@ -99,24 +64,10 @@ task uploadApp2Admin(dependsOn: 'jiaGuApp2Admin') {
     group = "publish"
 
     doLast {
-        File dir = new File(app2AdminFileDir)
-        if (!dir.exists()) {
-            println "Alpha dir not exists：" + dir.path
-            return
+        def apkFile = getApkFile(rootProject.ext.jiagu["app2AdminOutputPath"])
+        if (apkFile != null) {
+            uploadPGY(apkFile.absolutePath, "")
         }
-        File[] files = dir.listFiles(new FileFilter() {
-            @Override
-            boolean accept(File file) {
-                return file.isFile() && file.name.endsWith(".apk")
-            }
-        })
-        if (files == null || files.size() == 0) {
-            println "files == null ||  files.size() == 0"
-            return
-        }
-        File apkFile = files[0]
-
-        uploadPGY(apkFile.path)
     }
 }
 

@@ -1,0 +1,221 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+
+/**
+ * 加固
+ * @param config 配置加固策略
+ * @param apkPath 要加固的文件路径
+ * @param outputPath 输出路径
+ * @param channelName 渠道名，为 Null 时读取 rootProject.ext.jiagu["channelConfigPath"] 多渠道配置文件
+ */
+def jiaGu(String config, String apkPath, String outputPath, String channelName) {
+    println("开始加固 \nconfig：$config \napkPath:$apkPath \noutputPath:$outputPath \nchannelName:$channelName")
+    exec {
+        executable = 'java'
+        args = ['-jar', rootProject.ext.jiagu["banbanJar"],
+                '-i', rootProject.ext.jiagu["banbanIp"],
+                '-u', rootProject.ext.jiagu["banbanName"],
+                '-a', rootProject.ext.jiagu["banbanApiKey"],
+                '-c', rootProject.ext.jiagu["banbanSecretKey"],
+                '-f', '0',
+                '-t', config,
+                '-p', apkPath,
+                '-d', outputPath,
+        ]
+    }
+
+    println "加固的文件路径：${apkPath}"
+    println "加固后的文件路径：${outputPath}"
+
+    def signApkPath = apkSigner(outputPath)
+
+    generatingMultipleChannels(signApkPath, outputPath, channelName)
+
+    if (isJenkins.toBoolean()) {
+        String sourceDir = file(outputPath).parentFile.absolutePath
+        String destinationDir = "/Users/buildBackup/${rootProject.properties["JOB_NAME"]}/${rootProject.ext.curGitCommit}/${rootProject.ext.curTime}/"
+        new groovy.util.AntBuilder().copy(todir: destinationDir) {
+            fileset(dir: sourceDir)
+        }
+        println "将构建产物备份到：${destinationDir}"
+    }
+}
+
+
+def apkSigner(String apkDir) {
+    def apkFile = getApkFile(apkDir)
+
+    if (apkFile == null || !apkFile.exists()) {
+        throw GradleException("加固后的 apk 文件不存在")
+    }
+    def signDir = new File(apkDir, 'sign')
+    if (!signDir.exists()) {
+        signDir.mkdirs()
+    }
+    def outputApkPath = new File(signDir, apkFile.name)
+
+    def storeFile = rootProject.ext.signing["storeFile"]
+    def storeFilePath = file(storeFile).absolutePath
+    //兼容 Windows、Mac、Linux 系统
+    def execuTable = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd' : 'sh'
+    def apksigner = Os.isFamily(Os.FAMILY_WINDOWS) ? 'apksigner.bat' : './apksigner'
+
+    println("对加固包进行签名")
+
+    def parameter = [apksigner, 'sign',
+                     '--ks', storeFilePath,
+                     '--ks-key-alias', rootProject.ext.signing["keyAlias"],
+                     '--ks-pass', "pass:${rootProject.ext.signing["storePassword"]}",
+                     '--key-pass', "pass:${rootProject.ext.signing["keyPassword"]}",
+                     '--out', outputApkPath, apkFile.absolutePath]
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        parameter.add(0, '/c')
+    }
+    exec {
+        workingDir = rootProject.ext.apksignerDir
+        executable = execuTable
+        args = parameter
+    }
+    println "apk 签名成功：" + outputApkPath
+    return outputApkPath
+}
+
+/**
+ * 生成多渠道包
+ * @param signApkPath 基准包
+ * @param outputDir 输出目录
+ * @param channelName 渠道名，为 Null 时读取 rootProject.ext.jiagu["channelConfigPath"] 多渠道配置文件
+ */
+private void generatingMultipleChannels(signApkPath, outputDir, channelName) {
+    def channelDir = new File(outputDir, 'channels')
+    if (!channelDir.exists()) {
+        channelDir.mkdirs()
+    }
+    println("生成多渠道包")
+    def channel = channelName == null ? rootProject.ext.jiagu["channelConfigPath"] : channelName
+    exec {
+        executable = 'java'
+        args = ['-jar', rootProject.ext.jiagu["VasDollyJar"],
+                'put', '-c', channel,
+                signApkPath, channelDir.absolutePath
+        ]
+    }
+    println("生成多渠道包完毕")
+}
+
+def getApkPath(String flavor) {
+    if ("app1Online" == flavor) {
+        return "${projectDir.absolutePath}/build/outputs/apk/production/release/${getApkName(rootProject.ext.android["versionName"])}"
+    } else {
+        return "${projectDir.absolutePath}/build/outputs/apk/${flavor}/release/${getApkName(getTestVersionName(flavor))}"
+    }
+}
+
+private def getApkFile(String fileDir) {
+    def dir = file(fileDir)
+    if (!dir.exists()) {
+        println "dir not exists：" + dir.path
+        return null
+    }
+    File[] files = dir.listFiles(new FileFilter() {
+        @Override
+        boolean accept(File file) {
+            return file.isFile() && file.name.endsWith(".apk")
+        }
+    })
+    if (files == null || files.size() == 0) {
+        println "files == null ||  files.size() == 0"
+        return null
+    }
+    return files[0]
+}
+
+private static void checkOutputDir(File apkOutputFile) {
+    if (apkOutputFile.exists()) {
+        File[] files = apkOutputFile.listFiles()
+        if (files != null) {
+            for (File file : files) {
+                file.delete()
+            }
+        }
+    } else {
+        apkOutputFile.mkdirs()
+    }
+}
+
+/**
+ * App1
+ * 根据多渠道文件进行加固
+ * 执行命令：./gradlew releaseApp1
+ */
+task releaseApp1(dependsOn: ['assembleApp1OnlineRelease']) {
+    group = "publish"
+    doLast {
+        def apkOutputFile = file(rootProject.ext.jiagu["app1OnlineOutputPath"])
+        checkOutPutDir(apkOutputFile)
+        def apkFile = file(getApkPath("App1Online"))
+        if (!apkFile.exists()) {
+            println("apk file is not exists：" + apkFile.absolutePath)
+            return
+        }
+        jiaGu("1", apkFile.absolutePath, apkOutputFile.absolutePath, null)
+    }
+}
+
+/**
+ * App2
+ * 根据多渠道文件进行加固
+ * 执行命令：./gradlew releaseApp2
+ */
+task releaseApp2(dependsOn: 'assembleApp2OnlineRelease') {
+    group = "publish"
+    doLast {
+        def apkOutputFile = file(rootProject.ext.jiagu["app2OnlineOutputPath"])
+        checkOutPutDir(apkOutputFile)
+        def apkFile = file(getApkPath("App2Online"))
+        if (!apkFile.exists()) {
+            println("apk file is not exists：" + apkFile.absolutePath)
+            return
+        }
+        jiaGu("1", apkFile.absolutePath, apkOutputFile.absolutePath, null)
+    }
+}
+
+
+/**
+ * 加固超管服包
+ * 执行命令：./gradlew jiaGuApp1Admin
+ */
+task jiaGuApp1Admin(dependsOn: 'assembleApp1AdminRelease') {
+    group = "publish"
+    doLast {
+        def apkOutputFile = file(rootProject.ext.jiagu["app1AdminOutputPath"])
+        checkOutPutDir(apkOutputFile)
+        def apkFile = file(getApkPath("App1Admin"))
+        if (!apkFile.exists()) {
+            println("apk file is not exists：" + apkFile.absolutePath)
+            return
+        }
+        jiaGu("1", apkFile.absolutePath, apkOutputFile.absolutePath, null)
+    }
+}
+
+/**
+ * 加固超管服包
+ * 执行命令：./gradlew jiaGuApp2Admin
+ */
+task jiaGuApp2Admin(dependsOn: 'assembleApp2AdminRelease') {
+    group = "publish"
+    doLast {
+        def apkOutputFile = file(rootProject.ext.jiagu["app2AdminOutputPath"])
+        checkOutPutDir(apkOutputFile)
+        def apkFile = file(getApkPath("App2Admin"))
+        if (!apkFile.exists()) {
+            println("apk file is not exists：" + apkFile.absolutePath)
+            return
+        }
+        jiaGu("1", apkFile.absolutePath, apkOutputFile.absolutePath, null)
+    }
+}
+
+
